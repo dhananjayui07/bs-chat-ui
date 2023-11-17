@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:  
+  name: {{ include "bs-genai-ui.fullname" . }}
+  labels:
+{{ include "bs-genai-ui.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 25%
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "bs-genai-ui.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app.kubernetes.io/name: {{ include "bs-genai-ui.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+              httpGet:
+                path: /brspaipoc/
+                port: {{ .Values.service.internalPort }}
+              initialDelaySeconds: 30
+              timeoutSeconds: 5
+              periodSeconds: 60
+          readinessProbe:
+              httpGet:
+                path: /brspaipoc/
+                port: {{ .Values.service.internalPort }}
+              initialDelaySeconds: 30
+              timeoutSeconds: 5
+              periodSeconds: 60          
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}  
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    

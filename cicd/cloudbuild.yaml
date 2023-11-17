@@ -1,0 +1,29 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', '${_REGISTRY_PATH}/bs-genai-ui${_BUILD_ENV_SEPARATOR}${_BUILD_ENV}:$SHORT_SHA','-t','${_REGISTRY_PATH}/bs-genai-ui${_BUILD_ENV_SEPARATOR}${_BUILD_ENV}:latest','-f','./Dockerfile','.' ]
+- name: "gcr.io/cloud-builders/docker"
+  args: ["push", "${_REGISTRY_PATH}/bs-genai-ui${_BUILD_ENV_SEPARATOR}${_BUILD_ENV}:$SHORT_SHA"]
+- name: "gcr.io/cloud-builders/docker"
+  args: ["push", "${_REGISTRY_PATH}/bs-genai-ui${_BUILD_ENV_SEPARATOR}${_BUILD_ENV}:latest"]
+- name: gcr.io/$PROJECT_ID/helm
+  args:
+    - upgrade
+    - -i
+    - bs-genai-ui
+    - ./helm/bs-genai-ui
+    - --set
+    - image.repository=${_REGISTRY_PATH}/bs-genai-ui${_BUILD_ENV_SEPARATOR}${_BUILD_ENV},image.tag=latest
+    - -f
+    - helm/bs-genai-ui/values.yaml
+    - --namespace
+    - $_CUSTOM_NS
+  env:
+    - KUBECONFIG=./kube.config
+    - TILLERLESS=true
+    - NAMESPACE=$_CUSTOM_NS
+    - CLOUDSDK_COMPUTE_ZONE=$_CUSTOM_ZONE
+    - CLOUDSDK_CONTAINER_CLUSTER=$_CUSTOM_CLUSTER
+    - GCLOUD_PROJECT=$_CUSTOM_PROJECT
+timeout: 1200s
+options:
+    logging: CLOUD_LOGGING_ONLY

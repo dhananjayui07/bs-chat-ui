@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bs-genai-ui.fullname" . }}
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+  labels:
+{{ include "bs-genai-ui.labels" . | indent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "bs-genai-ui.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
